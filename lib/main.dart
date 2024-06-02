@@ -3,88 +3,87 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 void main() {
-  runApp(const MainApp());
+  runApp(const GuessingGameApp());
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class GuessingGameApp extends StatelessWidget {
+  const GuessingGameApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        appBarTheme: AppBarTheme(
+        appBarTheme: const AppBarTheme(
           color: Color.fromARGB(255, 114, 207, 253), // Color del AppBar
         ),
       ),
-      home: const GameScreen(),
+      home: const GuessingGameScreen(),
     );
   }
 }
 
-class GameScreen extends StatefulWidget {
-  const GameScreen({super.key});
+class GuessingGameScreen extends StatefulWidget {
+  const GuessingGameScreen({super.key});
 
   @override
-  _GameScreenState createState() => _GameScreenState();
+  _GuessingGameScreenState createState() => _GuessingGameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen> {
-  int randomNumber = Random().nextInt(100) + 1;
-  int attempts = 10;
-  int minRange = 1;
-  int maxRange = 100;
-  String helperText = "1";
-  String counterText = "100";
-  TextEditingController _controller = TextEditingController();
+class _GuessingGameScreenState extends State<GuessingGameScreen> {
+  int targetNumber = Random().nextInt(100) + 1;
+  int remainingAttempts = 10;
+  int lowerBound = 1;
+  int upperBound = 100;
+  String minHint = "1";
+  String maxHint = "100";
+  final TextEditingController _numberController = TextEditingController();
 
-  void _restartGame() {
+  void _resetGame() {
     setState(() {
-      randomNumber = Random().nextInt(100) + 1;
-      attempts = 10;
-      minRange = 1;
-      maxRange = 100;
-      helperText = " 1";
-      counterText = "100";
-      _controller.clear();
+      targetNumber = Random().nextInt(100) + 1;
+      remainingAttempts = 10;
+      lowerBound = 1;
+      upperBound = 100;
+      minHint = "1";
+      maxHint = "100";
+      _numberController.clear();
     });
   }
 
-  void _checkNumber(int guessedNumber) {
+  void _validateGuess(int guessedNumber) {
     setState(() {
-      attempts--;
-      if (guessedNumber == randomNumber) {
-        _showAlertDialog("¡Ganaste!", "El número adivinado es : $randomNumber");
-        return;
-      } else if (guessedNumber < randomNumber) {
-        minRange = guessedNumber + 1;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text("El número es demasiado bajo. Introduce uno más alto."),
-          ),
-        );
+      remainingAttempts--;
+      if (guessedNumber == targetNumber) {
+        _showDialog("¡Ganaste!", "El número correcto es: $targetNumber");
       } else {
-        maxRange = guessedNumber - 1;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text("El número es demasiado alto. Introduce uno más bajo."),
-          ),
-        );
-      }
+        if (guessedNumber < targetNumber) {
+          lowerBound = guessedNumber + 1;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("El número es demasiado bajo. Prueba uno más alto."),
+            ),
+          );
+        } else {
+          upperBound = guessedNumber - 1;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("El número es demasiado alto. Prueba uno más bajo."),
+            ),
+          );
+        }
 
-      if (attempts == 0) {
-        _showAlertDialog("¡Perdiste!", "El número era $randomNumber.");
-      } else {
-        helperText = "$minRange";
-        counterText = "$maxRange";
+        if (remainingAttempts == 0) {
+          _showDialog("¡Perdiste!", "El número correcto era $targetNumber.");
+        } else {
+          minHint = "$lowerBound";
+          maxHint = "$upperBound";
+        }
       }
     });
   }
 
-  void _showAlertDialog(String title, String content) {
+  void _showDialog(String title, String content) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -93,10 +92,10 @@ class _GameScreenState extends State<GameScreen> {
           content: Text(content),
           actions: <Widget>[
             TextButton(
-              child: Text("Jugar de nuevo"),
+              child: const Text("Jugar de nuevo"),
               onPressed: () {
                 Navigator.of(context).pop();
-                _restartGame();
+                _resetGame();
               },
             ),
           ],
@@ -105,16 +104,16 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  void _submitNumber() {
-    int guessedNumber = int.tryParse(_controller.text) ?? 0;
-    if (guessedNumber >= minRange && guessedNumber <= maxRange) {
-      _checkNumber(guessedNumber);
-      _controller.clear();
+  void _submitGuess() {
+    int guessedNumber = int.tryParse(_numberController.text) ?? 0;
+    if (guessedNumber >= lowerBound && guessedNumber <= upperBound) {
+      _validateGuess(guessedNumber);
+      _numberController.clear();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-              "Por favor, introduce un número válido entre $minRange y $maxRange"),
+              "Introduce un número válido entre $lowerBound y $upperBound."),
         ),
       );
     }
@@ -124,7 +123,7 @@ class _GameScreenState extends State<GameScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           "Adivina el número",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
@@ -139,34 +138,35 @@ class _GameScreenState extends State<GameScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
+                  const Text(
                     "Intentos restantes: ",
                     style: TextStyle(fontSize: 20),
                   ),
                   Text(
-                    "$attempts",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    "$remainingAttempts",
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               TextField(
-                controller: _controller,
+                controller: _numberController,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.done,
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9]'))
                 ],
                 onSubmitted: (String value) {
-                  _submitNumber();
+                  _submitGuess();
                 },
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: Color.fromRGBO(139, 152, 226, 0.6),
-                  prefixIcon: Icon(Icons.numbers),
-                  helperText: helperText,
-                  counterText: counterText,
-                  border: OutlineInputBorder(),
+                  fillColor: const Color.fromRGBO(139, 152, 226, 0.6),
+                  prefixIcon: const Icon(Icons.numbers),
+                  helperText: minHint,
+                  counterText: maxHint,
+                  border: const OutlineInputBorder(),
                   labelText: "Número",
                 ),
                 textAlign: TextAlign.center,
